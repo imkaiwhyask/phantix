@@ -1,8 +1,58 @@
 let currentUser = null;
+let avatarCropper = null;
 let selectedUser = null;
 let typingTimeout = null;
+let cropAvatarModal = null;
 
 const API = "http://localhost:8080";
+
+function updateMyProfileUI() {
+  const avatarEl = document.getElementById("myAvatar");
+  const modalAvatarEl = document.getElementById("profileModalAvatar");
+  const profileName = document.getElementById("profileNickname");
+  const profileDept = document.getElementById("profileDepartment");
+  const statusText = document.getElementById("profileStatusText");
+  const statusDot = document.getElementById("profileStatusDot");
+const fullNameInput = document.getElementById("fullNameInput");
+const emailInput = document.getElementById("emailInput");
+const nicknameInput = document.getElementById("nicknameInput");
+const departmentInput = document.getElementById("departmentInput");
+const statusInput = document.getElementById("statusInput");
+  if (!currentUser) return;
+
+  const displayName = currentUser.nickname || currentUser.name;
+  const firstLetter = displayName.charAt(0).toUpperCase();
+
+  [avatarEl, modalAvatarEl].forEach(el => {
+    if (!el) return;
+
+    if (currentUser.avatar) {
+      el.style.backgroundImage = `url(${API}/uploads/avatars/${currentUser.avatar}?t=${Date.now()})`;
+      el.innerText = "";
+    } else {
+      el.style.backgroundImage = "none";
+      el.innerText = firstLetter;
+    }
+  });
+
+  if (profileName) profileName.innerText = displayName;
+  if (profileDept) profileDept.innerText = currentUser.department || "No department";
+if (fullNameInput) fullNameInput.value = currentUser.name || "";
+if (emailInput) emailInput.value = currentUser.email || "";
+if (nicknameInput) nicknameInput.value = currentUser.nickname || "";
+if (departmentInput) departmentInput.value = currentUser.department || "";
+if (statusInput) statusInput.value = currentUser.status || "online";
+
+  const status = currentUser.status || "online";
+
+  if (statusText) {
+    statusText.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  if (statusDot) {
+    statusDot.className = "status-dot " + status;
+  }
+}
 
 async function login() {
   const email = document.getElementById("email").value.trim();
@@ -23,6 +73,8 @@ async function login() {
 
   if (data.status === "success") {
     currentUser = data.user;
+
+    updateMyProfileUI();
 
     document.getElementById("login").style.display = "none";
     document.getElementById("app").style.display = "flex";
@@ -61,7 +113,9 @@ async function loadUsers() {
 
     if (user.avatar) {
       avatar.style.backgroundImage = `url(${API}/uploads/avatars/${user.avatar})`;
+      avatar.innerText = "";
     } else {
+      avatar.style.backgroundImage = "none";
       avatar.innerText = user.name.charAt(0).toUpperCase();
     }
 
@@ -157,15 +211,7 @@ async function sendMessage() {
     })
   });
 
-  await fetch(`${API}/typing.php`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: currentUser.id,
-      receiver_id: selectedUser.id,
-      is_typing: 0
-    })
-  });
+  await sendTypingStatus(false);
 
   document.getElementById("msg").value = "";
   loadMessages();
@@ -235,10 +281,119 @@ async function checkTyping() {
   }
 }
 
+async function uploadCroppedAvatar() {
+  if (!avatarCropper || !currentUser) return;
+
+  const canvas = avatarCropper.getCroppedCanvas({
+    width: 400,
+    height: 400
+  });
+
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append("avatar", blob, `avatar_${currentUser.id}.png`);
+    formData.append("user_id", currentUser.id);
+
+    const res = await fetch(`${API}/upload-avatar.php`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      currentUser.avatar = data.avatar;
+      updateMyProfileUI();
+      loadUsers();
+
+      if (cropAvatarModal) {
+        cropAvatarModal.hide();
+      }
+
+      avatarCropper.destroy();
+      avatarCropper = null;
+
+      document.getElementById("avatarInput").value = "";
+    }
+  }, "image/png");
+}
+
+async function saveProfile() {
+  if (!currentUser) return;
+
+  const nickname = document.getElementById("nicknameInput").value.trim();
+  const department = document.getElementById("departmentInput").value.trim();
+  const status = document.getElementById("statusInput").value;
+
+  await fetch(`${API}/update-profile.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: currentUser.id,
+      nickname,
+      department,
+      status
+    })
+  });
+
+  currentUser.nickname = nickname;
+  currentUser.department = department;
+  currentUser.status = status;
+
+  updateMyProfileUI();
+  loadUsers();
+
+  alert("Profile updated.");
+}
+
+window.uploadCroppedAvatar = async function () {
+  if (!avatarCropper || !currentUser) {
+    alert("Please select an image first.");
+    return;
+  }
+
+  const canvas = avatarCropper.getCroppedCanvas({
+    width: 400,
+    height: 400
+  });
+
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append("avatar", blob, `avatar_${currentUser.id}.png`);
+    formData.append("user_id", currentUser.id);
+
+    const res = await fetch(`${API}/upload-avatar.php`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      currentUser.avatar = data.avatar;
+
+      updateMyProfileUI();
+      loadUsers();
+
+      const modalEl = document.getElementById("cropAvatarModal");
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      avatarCropper.destroy();
+      avatarCropper = null;
+
+      document.getElementById("avatarInput").value = "";
+    } else {
+      alert("Avatar upload failed.");
+    }
+  }, "image/png");
+};
+
 window.addEventListener("DOMContentLoaded", () => {
   const email = document.getElementById("email");
   const password = document.getElementById("password");
   const msg = document.getElementById("msg");
+  const avatarInput = document.getElementById("avatarInput");
 
   if (email) {
     email.addEventListener("keydown", e => {
@@ -279,6 +434,39 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+if (avatarInput) {
+  avatarInput.addEventListener("change", function () {
+    if (!currentUser) return;
+
+    const file = this.files[0];
+    if (!file) return;
+
+    const image = document.getElementById("cropAvatarImage");
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      image.src = e.target.result;
+
+      cropAvatarModal = new bootstrap.Modal(document.getElementById("cropAvatarModal"));
+      cropAvatarModal.show();
+
+      if (avatarCropper) {
+        avatarCropper.destroy();
+      }
+
+      avatarCropper = new Cropper(image, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: "move",
+        autoCropArea: 1,
+        background: false,
+        responsive: true
+      });
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       selectedUser = null;

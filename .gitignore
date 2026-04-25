@@ -4,3 +4,5 @@ vendor/
 mysql_data/
 backend/public/uploads/avatars/*
 !backend/public/uploads/avatars/.gitkeep
+backend/public/uploads/chat/*
+!backend/public/uploads/chat/.gitkeep
