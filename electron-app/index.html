@@ -31,14 +31,18 @@
   <main class="chat-panel">
     <div class="chat-header">
       <div>
-        <h5 id="chatTitle" class="mb-0">Select a user</h5>
+        <h5 id="chatTitle" class="mb-0">Messages</h5>
         <small class="text-muted">Internal messaging</small>
       </div>
     </div>
 
-    <div class="messages" id="messages"></div>
+    <div class="messages" id="messages">
+    <div id="emptyState" style="text-align:center; color:#9ca3af; margin-top:50px;">
+    Open a chat to begin messaging
+  </div>
+</div>
 
-    <div class="message-input">
+    <div id="messageInputArea" class="message-input">
       <textarea id="msg" class="form-control" placeholder="Type a message" rows="1"></textarea>
      <button class="btn btn-dark" onclick="sendMessage()">Send</button>
     </div>

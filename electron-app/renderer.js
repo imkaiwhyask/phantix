@@ -23,17 +23,25 @@ async function login() {
   if (data.status === "success") {
     currentUser = data.user;
 
-    document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "flex";
+document.getElementById("login").style.display = "none";
+document.getElementById("app").style.display = "flex";
+document.getElementById("messageInputArea").style.display = "none";
+document.getElementById("messages").innerHTML = `
+  <div id="emptyState" style="text-align:center; color:#9ca3af; margin-top:50px;">
+    Select a conversation to get started
+  </div>
+`;
 
-    loadUsers();
+document.getElementById("chatTitle").innerText = "Messages";
+
+loadUsers();
   } else {
     alert(data.message || "Login failed");
   }
 }
 
 async function loadUsers() {
-  const res = await fetch(`${API}/users.php`);
+  const res = await fetch(`${API}/users.php?user_id=${currentUser.id}`);
   const data = await res.json();
 
   const usersDiv = document.getElementById("users");
@@ -43,18 +51,50 @@ async function loadUsers() {
     if (user.id == currentUser.id) return;
 
     const div = document.createElement("div");
-    div.innerText = user.name;
+    div.className = "user-item";
 
-    div.onclick = () => {
-      selectedUser = user;
-      document.getElementById("chatTitle").innerText = user.name;
+    // avatar
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
 
-      document.querySelectorAll("#users div").forEach(el => {
-        el.classList.remove("active-user");
-      });
+    if (user.avatar) {
+      avatar.style.backgroundImage = `url(${API}/uploads/avatars/${user.avatar})`;
+    } else {
+      avatar.innerText = user.name.charAt(0).toUpperCase();
+    }
 
-      div.classList.add("active-user");
-      loadMessages();
+    // name
+    const name = document.createElement("span");
+    name.innerText = user.name;
+
+    div.appendChild(avatar);
+    div.appendChild(name);
+
+    // 🔴 unread badge
+    if (user.unread_count > 0) {
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.innerText = user.unread_count;
+      div.appendChild(badge);
+    }
+
+   div.onclick = () => {
+  selectedUser = user;
+
+document.getElementById("messageInputArea").style.display = "flex";
+document.getElementById("emptyState").style.display = "none";
+  document.getElementById("chatTitle").innerText = user.name;
+
+  document.querySelectorAll("#users div").forEach(el => {
+    el.classList.remove("active-user");
+  });
+
+  div.classList.add("active-user");
+
+  loadMessages();
+
+  // 👇 IMPORTANT
+  setTimeout(loadUsers, 300);
     };
 
     usersDiv.appendChild(div);
@@ -118,6 +158,7 @@ async function sendMessage() {
 
   document.getElementById("msg").value = "";
   loadMessages();
+  document.getElementById("messageInputArea").style.display = "none";
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -152,9 +193,36 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  setInterval(() => {
-    if (currentUser && selectedUser) {
-      loadMessages();
-    }
-  }, 2000);
+  // 👇 ADD THIS BLOCK HERE
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    selectedUser = null;
+
+    document.getElementById("chatTitle").innerText = "Messages";
+
+    const messagesDiv = document.getElementById("messages");
+    messagesDiv.innerHTML = `
+      <div id="emptyState" style="text-align:center; color:#9ca3af; margin-top:50px;">
+        Select a conversation to get started
+      </div>
+    `;
+
+    document.getElementById("messageInputArea").style.display = "none";
+
+    document.querySelectorAll("#users div").forEach(el => {
+      el.classList.remove("active-user");
+    });
+  }
+});
+
+  //  KEEP THIS AT THE BOTTOM
+setInterval(() => {
+  if (currentUser) {
+    loadUsers(); // refresh unread badges
+  }
+
+  if (currentUser && selectedUser) {
+    loadMessages();
+  }
+}, 2000);
 });
