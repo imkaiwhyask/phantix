@@ -35,12 +35,57 @@ No Slack. No Teams. No subscriptions. Just your own server, your own data.
 
 ---
 
-## ✨ Features (v1)
+## ✨ Features
 
-- 🔐 **User Registration & Login** — simple, secure onboarding
-- 💬 **1-on-1 Messaging** — direct messaging between users
-- 🕓 **Message History** — persistent conversation history
-- 🐳 **Docker Support** — spin up the backend with a single command
+### 🔐 Authentication
+- Email + password login
+- Keyboard support (Enter to login)
+- Session-based admin panel access
+
+### 💬 Messaging
+- 1-on-1 chat
+- Real-time message refresh (polling)
+- Send with Enter, newline with Shift+Enter
+- Message bubbles (me vs. others)
+- Auto-scroll to latest message
+
+### 🧠 Chat Intelligence
+- Unread message badge 🔴
+- Read / Unread status (iMessage-style)
+- Typing indicator (animated three dots)
+- Active conversation highlight
+- Escape key to close conversation
+
+### 👤 Profile System
+- Upload & crop avatar (1:1, powered by Cropper.js) 📷✂️
+- Default avatar = first letter of name or nickname
+- Nickname support ✏️
+- Department field 🏢
+- Status system: 🟢 Online · 🟡 Away · 🔴 Busy · ⚫ Offline
+- Profile modal with editable info
+- Clean sidebar profile display
+
+### 🧑‍🤝‍🧑 User List
+- Shows all users with avatar + name (nickname priority)
+- Unread count badge per user
+- Click to open chat
+- Active user highlight
+
+### 🖥️ UI / UX
+- Lark/Slack-inspired layout
+- Left icon rail + chat list panel + main chat window + right info panel
+- Clean, modern design with responsive adjustments
+
+### ⚙️ Admin Panel (Web App)
+- Separate admin dashboard with login protection
+- View, create, edit, and delete users
+- Toggle admin role per user
+
+### 🔄 Backend
+- PHP REST-style API
+- MySQL database
+- Docker-ready structure
+- Modular endpoints: login, users, messages, unread counts, typing, profile update, avatar upload
 
 ---
 
@@ -107,17 +152,25 @@ phantix/
 
 Phantix is open-source and built for the community. **All contributions are welcome** — bug fixes, new features, UI improvements, docs — everything counts.
 
-### Ideas for what to build
+### 🗺️ Roadmap — what's planned
 
-- 👥 Group / channel messaging
-- 📎 File and image attachments
-- 🔔 Desktop push notifications
-- 🌙 Dark mode UI
-- 🔒 End-to-end encryption
-- 📱 Web client / browser version
-- 🧑‍💼 Admin dashboard for user management
-- 🌐 Multi-language / i18n support
-- 📌 Message pinning & reactions
+These are great starting points if you want to contribute:
+
+| Feature | Status |
+|---|---|
+| File / image upload in chat | ⏳ Planned |
+| Real-time online/offline presence (heartbeat) | ⏳ Planned |
+| Delete message / "This message was removed" | ⏳ Planned |
+| Delete conversation | ⏳ Planned |
+| Emoji picker | ⏳ Planned |
+| Desktop notifications | ⏳ Planned |
+| AD / LDAP integration | ⏳ Planned |
+| Settings panel (.env UI) | ⏳ Planned |
+| Group / channel messaging | 💡 Idea |
+| End-to-end encryption | 💡 Idea |
+| Web client / browser version | 💡 Idea |
+| Dark mode | 💡 Idea |
+| Multi-language / i18n support | 💡 Idea |
 
 ### How to contribute
 
