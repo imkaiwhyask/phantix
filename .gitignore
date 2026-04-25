@@ -2,3 +2,5 @@
 node_modules/
 vendor/
 mysql_data/
+backend/public/uploads/avatars/*
+!backend/public/uploads/avatars/.gitkeep
