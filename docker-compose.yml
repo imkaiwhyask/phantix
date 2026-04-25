@@ -1,0 +1,40 @@
+services:
+  phantix_php:
+    image: php:8.3-apache
+    container_name: phantix_php
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend/public:/var/www/html
+      - ./backend/config:/var/www/config
+    depends_on:
+      - phantix_mysql
+    command: >
+      bash -c "docker-php-ext-install pdo pdo_mysql &&
+               apache2-foreground"
+
+  phantix_mysql:
+    image: mysql:8.0
+    container_name: phantix_mysql
+    environment:
+      MYSQL_DATABASE: phantix_db
+      MYSQL_USER: phantix_user
+      MYSQL_PASSWORD: phantix_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - phantix_mysql_data:/var/lib/mysql
+
+  phantix_phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phantix_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: phantix_mysql
+    depends_on:
+      - phantix_mysql
+
+volumes:
+  phantix_mysql_data:
