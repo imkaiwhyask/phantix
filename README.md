@@ -1,16 +1,156 @@
-# Phantix
+<div align="center">
 
-Phantix is a simple internal messaging desktop app.
+<br/>
 
-## Tech Stack
-- Electron.js
-- PHP
-- MySQL
-- Docker
+```
+██████╗ ██╗  ██╗ █████╗ ███╗   ██╗████████╗██╗██╗  ██╗
+██╔══██╗██║  ██║██╔══██╗████╗  ██║╚══██╔══╝██║╚██╗██╔╝
+██████╔╝███████║███████║██╔██╗ ██║   ██║   ██║ ╚███╔╝ 
+██╔═══╝ ██╔══██║██╔══██║██║╚██╗██║   ██║   ██║ ██╔██╗ 
+██║     ██║  ██║██║  ██║██║ ╚████║   ██║   ██║██╔╝ ██╗
+╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚════╝  ╚═╝   ╚═╝╚═╝  ╚═╝
+```
 
-## Features v1
-- User registration
-- User login
-- 1-on-1 messaging
-- Message history
+**A simple, self-hosted internal messaging desktop app — fork it, own it, extend it.**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](CONTRIBUTING.md)
+[![Forks](https://img.shields.io/github/forks/imkaiwhyask/phantix?style=flat&color=orange)](https://github.com/imkaiwhyask/phantix/network/members)
+[![Stars](https://img.shields.io/github/stars/imkaiwhyask/phantix?style=flat&color=yellow)](https://github.com/imkaiwhyask/phantix/stargazers)
+[![Issues](https://img.shields.io/github/issues/imkaiwhyask/phantix)](https://github.com/imkaiwhyask/phantix/issues)
+
+<br/>
+
+</div>
+
+---
+
+## 💬 What is Phantix?
+
+**Phantix** is an open-source, self-hosted internal messaging desktop app built with **Electron**, **PHP**, and **MySQL**. It's designed for teams and organizations that want a private, on-premise messaging solution without relying on third-party services.
+
+No Slack. No Teams. No subscriptions. Just your own server, your own data.
+
+> Fork it. Self-host it. Make it yours.
+
+---
+
+## ✨ Features (v1)
+
+- 🔐 **User Registration & Login** — simple, secure onboarding
+- 💬 **1-on-1 Messaging** — direct messaging between users
+- 🕓 **Message History** — persistent conversation history
+- 🐳 **Docker Support** — spin up the backend with a single command
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Desktop App | [Electron.js](https://www.electronjs.org/) |
+| Backend | PHP |
+| Database | MySQL |
+| Infrastructure | Docker / Docker Compose |
+| Frontend | HTML, CSS, JavaScript |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Make sure you have the following installed:
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Docker](https://www.docker.com/) & Docker Compose
+- [PHP](https://www.php.net/) (v8.x recommended)
+
+### Installation
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/imkaiwhyask/phantix.git
+cd phantix
+
+# 2. Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials and config
+
+# 3. Start the backend with Docker
+docker-compose up -d
+
+# 4. Install Electron dependencies
+cd electron-app
+npm install
+
+# 5. Launch the app
+npm start
+```
+
+---
+
+## 📁 Project Structure
+
+```
+phantix/
+├── backend/           # PHP API — handles auth, messaging, and DB logic
+├── electron-app/      # Electron desktop app — UI and IPC logic
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+---
+
+## 🤝 Contributing
+
+Phantix is open-source and built for the community. **All contributions are welcome** — bug fixes, new features, UI improvements, docs — everything counts.
+
+### Ideas for what to build
+
+- 👥 Group / channel messaging
+- 📎 File and image attachments
+- 🔔 Desktop push notifications
+- 🌙 Dark mode UI
+- 🔒 End-to-end encryption
+- 📱 Web client / browser version
+- 🧑‍💼 Admin dashboard for user management
+- 🌐 Multi-language / i18n support
+- 📌 Message pinning & reactions
+
+### How to contribute
+
+1. **Fork** this repo
+2. Create a new branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m "feat: add your feature"`
+4. Push to your branch: `git push origin feature/your-feature-name`
+5. Open a **Pull Request** — describe what you built and why
+
+Please follow the existing code style and keep PRs focused on a single change.
+
+---
+
+## 🐛 Reporting Issues
+
+Found a bug? Have a feature request? [Open an issue](https://github.com/imkaiwhyask/phantix/issues) and describe what you're seeing. Screenshots and reproduction steps are always appreciated.
+
+---
+
+## 📄 License
+
+Phantix is released under the **MIT License** — free to use, modify, distribute, and build upon.
+
+See [LICENSE](LICENSE) for full details.
+
+---
+
+## 🌟 Show Your Support
+
+If Phantix has been useful to you, give it a ⭐ on GitHub — it helps others discover the project and keeps the momentum going!
+
+---
+
+<div align="center">
+  <sub>Built with ☕ by <a href="https://github.com/imkaiwhyask">imkaiwhyask</a> — open to the world 🌍</sub>
+</div>
