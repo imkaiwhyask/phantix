@@ -82,7 +82,7 @@ async function login() {
       updateMyProfileUI();
 
       document.getElementById("login").style.display = "none";
-      document.getElementById("app").style.display = "flex";
+      document.getElementById("app").style.display = "grid";
       document.getElementById("messageInputArea").style.display = "none";
 
       document.getElementById("messages").innerHTML = `

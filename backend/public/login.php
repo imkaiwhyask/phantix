@@ -21,8 +21,12 @@ if ($user && password_verify($password, $user['password'])) {
         "status" => "success",
         "user" => [
             "id" => $user['id'],
-            "name" => $user['name'],
-            "email" => $user['email']
+    "name" => $user["name"],
+    "email" => $user["email"],
+    "nickname" => $user["nickname"],
+    "avatar" => $user["avatar"],
+    "department" => $user["department"],
+    "status" => $user["status"]
         ]
     ]);
 } else {
