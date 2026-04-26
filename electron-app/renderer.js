@@ -13,21 +13,24 @@ function updateMyProfileUI() {
   const profileDept = document.getElementById("profileDepartment");
   const statusText = document.getElementById("profileStatusText");
   const statusDot = document.getElementById("profileStatusDot");
-const fullNameInput = document.getElementById("fullNameInput");
-const emailInput = document.getElementById("emailInput");
-const nicknameInput = document.getElementById("nicknameInput");
-const departmentInput = document.getElementById("departmentInput");
-const statusInput = document.getElementById("statusInput");
+
+  const fullNameInput = document.getElementById("fullNameInput");
+  const emailInput = document.getElementById("emailInput");
+  const nicknameInput = document.getElementById("nicknameInput");
+  const departmentInput = document.getElementById("departmentInput");
+  const statusInput = document.getElementById("statusInput");
+
   if (!currentUser) return;
 
-  const displayName = currentUser.nickname || currentUser.name;
+  const displayName = currentUser.nickname || currentUser.name || "User";
   const firstLetter = displayName.charAt(0).toUpperCase();
 
   [avatarEl, modalAvatarEl].forEach(el => {
     if (!el) return;
 
     if (currentUser.avatar) {
-      el.style.backgroundImage = `url(${API}/uploads/avatars/${currentUser.avatar}?t=${Date.now()})`;
+      el.style.backgroundImage =
+        `url(${API}/uploads/avatars/${currentUser.avatar}?t=${Date.now()})`;
       el.innerText = "";
     } else {
       el.style.backgroundImage = "none";
@@ -37,11 +40,12 @@ const statusInput = document.getElementById("statusInput");
 
   if (profileName) profileName.innerText = displayName;
   if (profileDept) profileDept.innerText = currentUser.department || "No department";
-if (fullNameInput) fullNameInput.value = currentUser.name || "";
-if (emailInput) emailInput.value = currentUser.email || "";
-if (nicknameInput) nicknameInput.value = currentUser.nickname || "";
-if (departmentInput) departmentInput.value = currentUser.department || "";
-if (statusInput) statusInput.value = currentUser.status || "online";
+
+  if (fullNameInput) fullNameInput.value = currentUser.name || "";
+  if (emailInput) emailInput.value = currentUser.email || "";
+  if (nicknameInput) nicknameInput.value = currentUser.nickname || "";
+  if (departmentInput) departmentInput.value = currentUser.department || "";
+  if (statusInput) statusInput.value = currentUser.status || "online";
 
   const status = currentUser.status || "online";
 
@@ -63,38 +67,45 @@ async function login() {
     return;
   }
 
-  const res = await fetch(`${API}/login.php`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+  try {
+    const res = await fetch(`${API}/login.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.status === "success") {
-    currentUser = data.user;
+    if (data.status === "success") {
+      currentUser = data.user;
 
-    updateMyProfileUI();
+      updateMyProfileUI();
 
-    document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "flex";
-    document.getElementById("messageInputArea").style.display = "none";
+      document.getElementById("login").style.display = "none";
+      document.getElementById("app").style.display = "flex";
+      document.getElementById("messageInputArea").style.display = "none";
 
-    document.getElementById("messages").innerHTML = `
-      <div id="emptyState" style="text-align:center; color:#9ca3af; margin-top:50px;">
-        Select a conversation to get started
-      </div>
-    `;
+      document.getElementById("messages").innerHTML = `
+        <div id="emptyState" style="text-align:center; color:#9ca3af; margin-top:50px;">
+          Select a conversation to get started
+        </div>
+      `;
 
-    document.getElementById("chatTitle").innerText = "Messages";
+      document.getElementById("chatTitle").innerText = "Messages";
 
-    loadUsers();
-  } else {
-    alert(data.message || "Login failed");
+      loadUsers();
+    } else {
+      alert(data.message || "Login failed");
+    }
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
+    alert("Cannot connect to backend.");
   }
 }
 
 async function loadUsers() {
+  if (!currentUser) return;
+
   const res = await fetch(`${API}/users.php?user_id=${currentUser.id}`);
   const data = await res.json();
 
@@ -158,7 +169,10 @@ async function loadMessages() {
 
   document.getElementById("messageInputArea").style.display = "flex";
 
-  const res = await fetch(`${API}/messages.php?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`);
+  const res = await fetch(
+    `${API}/messages.php?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+  );
+
   const data = await res.json();
 
   const messagesDiv = document.getElementById("messages");
@@ -199,6 +213,7 @@ async function sendMessage() {
   }
 
   const message = document.getElementById("msg").value.trim();
+
   if (!message) return;
 
   await fetch(`${API}/send-message.php`, {
@@ -281,43 +296,6 @@ async function checkTyping() {
   }
 }
 
-async function uploadCroppedAvatar() {
-  if (!avatarCropper || !currentUser) return;
-
-  const canvas = avatarCropper.getCroppedCanvas({
-    width: 400,
-    height: 400
-  });
-
-  canvas.toBlob(async (blob) => {
-    const formData = new FormData();
-    formData.append("avatar", blob, `avatar_${currentUser.id}.png`);
-    formData.append("user_id", currentUser.id);
-
-    const res = await fetch(`${API}/upload-avatar.php`, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      currentUser.avatar = data.avatar;
-      updateMyProfileUI();
-      loadUsers();
-
-      if (cropAvatarModal) {
-        cropAvatarModal.hide();
-      }
-
-      avatarCropper.destroy();
-      avatarCropper = null;
-
-      document.getElementById("avatarInput").value = "";
-    }
-  }, "image/png");
-}
-
 async function saveProfile() {
   if (!currentUser) return;
 
@@ -346,54 +324,12 @@ async function saveProfile() {
   alert("Profile updated.");
 }
 
-window.uploadCroppedAvatar = async function () {
-  if (!avatarCropper || !currentUser) {
-    alert("Please select an image first.");
-    return;
-  }
-
-  const canvas = avatarCropper.getCroppedCanvas({
-    width: 400,
-    height: 400
-  });
-
-  canvas.toBlob(async (blob) => {
-    const formData = new FormData();
-    formData.append("avatar", blob, `avatar_${currentUser.id}.png`);
-    formData.append("user_id", currentUser.id);
-
-    const res = await fetch(`${API}/upload-avatar.php`, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      currentUser.avatar = data.avatar;
-
-      updateMyProfileUI();
-      loadUsers();
-
-      const modalEl = document.getElementById("cropAvatarModal");
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-
-      avatarCropper.destroy();
-      avatarCropper = null;
-
-      document.getElementById("avatarInput").value = "";
-    } else {
-      alert("Avatar upload failed.");
-    }
-  }, "image/png");
-};
-
 window.addEventListener("DOMContentLoaded", () => {
   const email = document.getElementById("email");
   const password = document.getElementById("password");
   const msg = document.getElementById("msg");
   const avatarInput = document.getElementById("avatarInput");
+  const saveCroppedAvatarBtn = document.getElementById("saveCroppedAvatarBtn");
 
   if (email) {
     email.addEventListener("keydown", e => {
@@ -434,39 +370,113 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-if (avatarInput) {
-  avatarInput.addEventListener("change", function () {
-    if (!currentUser) return;
+  if (avatarInput) {
+    avatarInput.addEventListener("change", function () {
+      if (!currentUser) return;
 
-    const file = this.files[0];
-    if (!file) return;
+      const file = this.files[0];
 
-    const image = document.getElementById("cropAvatarImage");
-    const reader = new FileReader();
+      if (!file) return;
 
-    reader.onload = function (e) {
-      image.src = e.target.result;
+      const image = document.getElementById("cropAvatarImage");
+      const reader = new FileReader();
 
-      cropAvatarModal = new bootstrap.Modal(document.getElementById("cropAvatarModal"));
-      cropAvatarModal.show();
+      reader.onload = function (e) {
+        image.src = e.target.result;
 
-      if (avatarCropper) {
-        avatarCropper.destroy();
+        cropAvatarModal = new bootstrap.Modal(
+          document.getElementById("cropAvatarModal")
+        );
+
+        cropAvatarModal.show();
+
+        if (avatarCropper) {
+          avatarCropper.destroy();
+        }
+
+        avatarCropper = new Cropper(image, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: "move",
+          autoCropArea: 1,
+          background: false,
+          responsive: true
+        });
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (saveCroppedAvatarBtn) {
+    saveCroppedAvatarBtn.addEventListener("click", async () => {
+      if (!avatarCropper || !currentUser) {
+        alert("Please select an image first.");
+        return;
       }
 
-      avatarCropper = new Cropper(image, {
-        aspectRatio: 1,
-        viewMode: 1,
-        dragMode: "move",
-        autoCropArea: 1,
-        background: false,
-        responsive: true
-      });
-    };
+      console.log("SAVE CLICKED");
 
-    reader.readAsDataURL(file);
-  });
-}
+      const canvas = avatarCropper.getCroppedCanvas({
+        width: 400,
+        height: 400
+      });
+
+      const dataURL = canvas.toDataURL("image/png");
+
+      const byteString = atob(dataURL.split(",")[1]);
+      const mimeString = dataURL.split(",")[0].split(":")[1].split(";")[0];
+
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+
+      const blob = new Blob([ab], { type: mimeString });
+
+      const formData = new FormData();
+      formData.append("avatar", blob, `avatar_${currentUser.id}.png`);
+      formData.append("user_id", currentUser.id);
+
+      try {
+        const res = await fetch(`${API}/upload-avatar.php`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        console.log("UPLOAD RESPONSE:", data);
+
+        if (data.status === "success") {
+          currentUser.avatar = data.avatar;
+
+          updateMyProfileUI();
+          loadUsers();
+
+          const modalEl = document.getElementById("cropAvatarModal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+
+          if (modal) modal.hide();
+
+          avatarCropper.destroy();
+          avatarCropper = null;
+
+          document.getElementById("avatarInput").value = "";
+
+          alert("Avatar updated.");
+        } else {
+          alert(data.message || "Avatar upload failed.");
+        }
+      } catch (err) {
+        console.error("UPLOAD ERROR:", err);
+        alert("Something went wrong while uploading avatar.");
+      }
+    });
+  }
+
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       selectedUser = null;
