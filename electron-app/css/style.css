@@ -408,6 +408,28 @@ body {
   width: 100%;
 }
 
+
+.chat-image {
+  max-width: 260px;
+  border-radius: 14px;
+  display: block;
+}
+
+.file-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px 12px;
+  max-width: 260px;
+}
+
+.file-card a {
+  color: #0ea5e9;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+
 .input-row textarea {
   flex: 1;
   width: 100%;
@@ -453,13 +475,12 @@ body {
   }
 }
 
-
-
   .icon-rail,
   .chat-list-panel,
   .details-panel {
     display: none !important;
   }
+
 
 
 }

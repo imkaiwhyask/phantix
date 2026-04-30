@@ -82,9 +82,13 @@
 
     <div id="messageInputArea" class="message-input" >
       <div class="input-tools">
-        <button title="Emoji">😊</button>
-        <button title="Attach file">📎</button>
-        <button title="Image">🖼️</button>
+       <button type="button" title="Emoji">😊</button>
+
+      <input type="file" id="chatFileInput" hidden>
+      <button type="button" title="Attach file" onclick="document.getElementById('chatFileInput').click()">📎</button>
+
+      <input type="file" id="chatImageInput" accept="image/*" hidden>
+      <button type="button" title="Image" onclick="document.getElementById('chatImageInput').click()">🖼️</button>
       </div>
 
       <div class="input-row">

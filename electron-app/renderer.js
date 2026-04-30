@@ -188,7 +188,21 @@ async function loadMessages() {
 
     const bubble = document.createElement("div");
     bubble.className = isMine ? "message me" : "message other";
-    bubble.innerText = msg.message;
+   if (msg.message_type === "image") {
+  bubble.innerHTML = `
+    <img src="${API}/${msg.file_path}" class="chat-image" />
+  `;
+} else if (msg.message_type === "file") {
+  bubble.innerHTML = `
+    <div class="file-card">
+      📄 <a href="${API}/${msg.file_path}" target="_blank">
+        ${msg.original_name}
+      </a>
+    </div>
+  `;
+} else {
+  bubble.innerText = msg.message;
+}
 
     wrapper.appendChild(bubble);
     messagesDiv.appendChild(wrapper);
@@ -324,12 +338,99 @@ async function saveProfile() {
   alert("Profile updated.");
 }
 
+async function checkNewMessages() {
+  if (!currentUser || !selectedUser) return;
+
+  const res = await fetch(
+    `${API}/messages.php?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+  );
+
+  const data = await res.json();
+
+  const messagesDiv = document.getElementById("messages");
+  const currentCount = messagesDiv.querySelectorAll(".message-wrapper").length;
+  const newCount = data.messages.length;
+
+  if (newCount > currentCount) {
+    loadMessages();
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   const email = document.getElementById("email");
   const password = document.getElementById("password");
   const msg = document.getElementById("msg");
   const avatarInput = document.getElementById("avatarInput");
   const saveCroppedAvatarBtn = document.getElementById("saveCroppedAvatarBtn");
+  const chatFileInput = document.getElementById("chatFileInput");
+const chatImageInput = document.getElementById("chatImageInput");
+
+// FILE UPLOAD
+if (chatFileInput) {
+  chatFileInput.addEventListener("change", async function () {
+    if (!selectedUser) {
+      alert("Select a user first");
+      return;
+    }
+
+    const file = this.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("sender_id", currentUser.id);
+    formData.append("receiver_id", selectedUser.id);
+
+    const res = await fetch(`${API}/upload-chat-file.php`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      loadMessages();
+    } else {
+      alert(data.message || "Upload failed");
+    }
+
+    this.value = "";
+  });
+}
+
+// IMAGE UPLOAD (same handler)
+if (chatImageInput) {
+  chatImageInput.addEventListener("change", async function () {
+    if (!selectedUser) {
+      alert("Select a user first");
+      return;
+    }
+
+    const file = this.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("sender_id", currentUser.id);
+    formData.append("receiver_id", selectedUser.id);
+
+    const res = await fetch(`${API}/upload-chat-file.php`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      loadMessages();
+    } else {
+      alert(data.message || "Upload failed");
+    }
+
+    this.value = "";
+  });
+}
+
 
   if (email) {
     email.addEventListener("keydown", e => {
@@ -500,14 +601,14 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  setInterval(() => {
-    if (!currentUser) return;
+setInterval(() => {
+  if (!currentUser) return;
 
-    refreshUnreadCounts();
+  refreshUnreadCounts();
 
-    if (selectedUser) {
-      loadMessages();
-      checkTyping();
-    }
-  }, 1000);
+  if (selectedUser) {
+    checkTyping();
+    checkNewMessages();
+  }
+}, 2000);
 });
