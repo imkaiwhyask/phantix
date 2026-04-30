@@ -4,7 +4,8 @@ let selectedUser = null;
 let typingTimeout = null;
 let cropAvatarModal = null;
 
-const API = "http://localhost:8080";
+const API = "http://localhost:3000";
+const socket = io(API);
 
 function updateMyProfileUI() {
   const avatarEl = document.getElementById("myAvatar");
@@ -68,7 +69,7 @@ async function login() {
   }
 
   try {
-    const res = await fetch(`${API}/login.php`, {
+    const res = await fetch(`${API}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
@@ -77,9 +78,9 @@ async function login() {
     const data = await res.json();
 
     if (data.status === "success") {
-      currentUser = data.user;
-
-      updateMyProfileUI();
+currentUser = data.user;
+socket.emit("join", currentUser.id);
+updateMyProfileUI();
 
       document.getElementById("login").style.display = "none";
       document.getElementById("app").style.display = "grid";
@@ -106,7 +107,7 @@ async function login() {
 async function loadUsers() {
   if (!currentUser) return;
 
-  const res = await fetch(`${API}/users.php?user_id=${currentUser.id}`);
+  const res = await fetch(`${API}/users?user_id=${currentUser.id}`);
   const data = await res.json();
 
   const usersDiv = document.getElementById("users");
@@ -143,7 +144,7 @@ async function loadUsers() {
       div.appendChild(badge);
     }
 
-    div.onclick = () => {
+    div.onclick = async () => {
       selectedUser = user;
 
       document.getElementById("messageInputArea").style.display = "flex";
@@ -156,8 +157,9 @@ async function loadUsers() {
 
       div.classList.add("active-user");
 
-      loadMessages();
-      setTimeout(refreshUnreadCounts, 300);
+      await markConversationAsRead(user.id);
+      await loadMessages();
+      await refreshUnreadCounts();
     };
 
     usersDiv.appendChild(div);
@@ -170,7 +172,7 @@ async function loadMessages() {
   document.getElementById("messageInputArea").style.display = "flex";
 
   const res = await fetch(
-    `${API}/messages.php?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
   );
 
   const data = await res.json();
@@ -188,21 +190,22 @@ async function loadMessages() {
 
     const bubble = document.createElement("div");
     bubble.className = isMine ? "message me" : "message other";
-   if (msg.message_type === "image") {
-  bubble.innerHTML = `
-    <img src="${API}/${msg.file_path}" class="chat-image" />
-  `;
-} else if (msg.message_type === "file") {
-  bubble.innerHTML = `
-    <div class="file-card">
-      📄 <a href="${API}/${msg.file_path}" target="_blank">
-        ${msg.original_name}
-      </a>
-    </div>
-  `;
-} else {
-  bubble.innerText = msg.message;
-}
+
+    if (msg.message_type === "image") {
+      bubble.innerHTML = `
+        <img src="${API}/${msg.file_path}" class="chat-image" />
+      `;
+    } else if (msg.message_type === "file") {
+      bubble.innerHTML = `
+        <div class="file-card">
+          📄 <a href="${API}/${msg.file_path}" target="_blank">
+            ${msg.original_name}
+          </a>
+        </div>
+      `;
+    } else {
+      bubble.innerText = msg.message;
+    }
 
     wrapper.appendChild(bubble);
     messagesDiv.appendChild(wrapper);
@@ -217,6 +220,57 @@ async function loadMessages() {
     }
   });
 
+messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+// Refresh unread badges after opening a conversation
+refreshUnreadCounts();
+}
+
+// PUT IT HERE
+function appendMessage(msg) {
+  const messagesDiv = document.getElementById("messages");
+  const isMine = msg.sender_id == currentUser.id;
+
+  // Remove old Read/Unread label first.
+  // If a new incoming message arrives after your sent message,
+  // your sent message is no longer the latest message.
+  messagesDiv.querySelectorAll(".seen-status").forEach(el => el.remove());
+
+  const wrapper = document.createElement("div");
+  wrapper.className = isMine
+    ? "message-wrapper me-wrapper"
+    : "message-wrapper other-wrapper";
+
+  const bubble = document.createElement("div");
+  bubble.className = isMine ? "message me" : "message other";
+
+  if (msg.message_type === "image") {
+    bubble.innerHTML = `
+      <img src="${API}/${msg.file_path}" class="chat-image" />
+    `;
+  } else if (msg.message_type === "file") {
+    bubble.innerHTML = `
+      <div class="file-card">
+        📄 <a href="${API}/${msg.file_path}" target="_blank">
+          ${msg.original_name || "Download file"}
+        </a>
+      </div>
+    `;
+  } else {
+    bubble.innerText = msg.message;
+  }
+
+  wrapper.appendChild(bubble);
+  messagesDiv.appendChild(wrapper);
+
+  // Only show Read/Unread if the newest appended message is mine.
+  if (isMine) {
+    const seen = document.createElement("div");
+    seen.className = "seen-status";
+    seen.innerText = msg.is_read == 1 ? "Read" : "Unread";
+    messagesDiv.appendChild(seen);
+  }
+
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
@@ -226,13 +280,16 @@ async function sendMessage() {
     return;
   }
 
-  const message = document.getElementById("msg").value.trim();
+  const input = document.getElementById("msg");
+  const message = input.value.trim();
 
   if (!message) return;
 
-  await fetch(`${API}/send-message.php`, {
+  const res = await fetch(`${API}/send-message`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       sender_id: currentUser.id,
       receiver_id: selectedUser.id,
@@ -240,17 +297,36 @@ async function sendMessage() {
     })
   });
 
+  const data = await res.json();
+
+  if (data.status !== "success") {
+    alert(data.message || "Message failed to send.");
+    return;
+  }
+
   await sendTypingStatus(false);
 
-  document.getElementById("msg").value = "";
-  loadMessages();
+  socket.emit("stop_typing", {
+    user_id: currentUser.id,
+    receiver_id: selectedUser.id
+  });
+
+  input.value = "";
+
+  setTimeout(() => {
+    if (selectedUser) {
+      loadMessages();
+    }
+  }, 500);
 }
 
 async function refreshUnreadCounts() {
   if (!currentUser) return;
 
-  const res = await fetch(`${API}/unread-counts.php?user_id=${currentUser.id}`);
+  const res = await fetch(`${API}/unread-counts?user_id=${currentUser.id}`);
   const data = await res.json();
+
+  if (data.status !== "success") return;
 
   document.querySelectorAll(".user-item").forEach(item => {
     const userId = item.dataset.userId;
@@ -269,10 +345,42 @@ async function refreshUnreadCounts() {
   });
 }
 
+async function markConversationAsRead(otherUserId) {
+  if (!currentUser || !otherUserId) return;
+
+  try {
+    await fetch(`${API}/mark-read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        other_user_id: otherUserId
+      })
+    });
+  } catch (err) {
+    console.warn("mark-read failed, falling back to /messages:", err);
+
+    // Fallback: your /messages route also marks messages as read.
+    await fetch(
+      `${API}/messages?sender_id=${currentUser.id}&receiver_id=${otherUserId}`
+    );
+  }
+
+  const userItem = document.querySelector(`.user-item[data-user-id="${otherUserId}"]`);
+  if (userItem) {
+    const badge = userItem.querySelector(".badge");
+    if (badge) badge.remove();
+  }
+
+  await refreshUnreadCounts();
+}
+
 async function sendTypingStatus(isTyping) {
   if (!currentUser || !selectedUser) return;
 
-  await fetch(`${API}/typing.php`, {
+  await fetch(`${API}/typing`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -287,7 +395,7 @@ async function checkTyping() {
   if (!currentUser || !selectedUser) return;
 
   const res = await fetch(
-    `${API}/typing-status.php?user_id=${currentUser.id}&other_user_id=${selectedUser.id}`
+    `${API}/typing-status?user_id=${currentUser.id}&other_user_id=${selectedUser.id}`
   );
 
   const data = await res.json();
@@ -317,7 +425,7 @@ async function saveProfile() {
   const department = document.getElementById("departmentInput").value.trim();
   const status = document.getElementById("statusInput").value;
 
-  await fetch(`${API}/update-profile.php`, {
+  await fetch(`${API}/update-profile`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -342,7 +450,7 @@ async function checkNewMessages() {
   if (!currentUser || !selectedUser) return;
 
   const res = await fetch(
-    `${API}/messages.php?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
   );
 
   const data = await res.json();
@@ -364,6 +472,78 @@ window.addEventListener("DOMContentLoaded", () => {
   const saveCroppedAvatarBtn = document.getElementById("saveCroppedAvatarBtn");
   const chatFileInput = document.getElementById("chatFileInput");
 const chatImageInput = document.getElementById("chatImageInput");
+
+socket.on("receive_message", async (msg) => {
+  if (!currentUser) return;
+
+  const isCurrentConversation =
+    selectedUser &&
+    (
+      msg.sender_id == selectedUser.id ||
+      msg.receiver_id == selectedUser.id
+    );
+
+  if (isCurrentConversation) {
+    appendMessage(msg);
+
+    // If the received message is from the open conversation,
+    // mark it as read immediately.
+    if (msg.sender_id == selectedUser.id && msg.receiver_id == currentUser.id) {
+      await markConversationAsRead(selectedUser.id);
+    }
+  }
+
+  await refreshUnreadCounts();
+});
+
+socket.on("messages_read", async (data) => {
+  if (!currentUser || !selectedUser) return;
+
+  // Example: you sent a message to User 2,
+  // then User 2 opened your conversation.
+  // This event tells your screen to update Unread -> Read.
+  if (data.reader_id == selectedUser.id) {
+    await loadMessages();
+  }
+
+  await refreshUnreadCounts();
+});
+
+socket.on("user_typing", (data) => {
+  console.log("Typing received:", data);
+
+  if (!selectedUser) return;
+
+  if (data.user_id == selectedUser.id) {
+    const typingDiv = document.getElementById("typingIndicator");
+
+    if (typingDiv) {
+      typingDiv.innerHTML = `
+        <div class="typing-wrapper">
+          <div class="typing-bubble">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      `;
+    }
+  }
+});
+
+socket.on("user_stop_typing", (data) => {
+  console.log("Stop typing received:", data);
+
+  if (!selectedUser) return;
+
+  if (data.user_id == selectedUser.id) {
+    const typingDiv = document.getElementById("typingIndicator");
+
+    if (typingDiv) {
+      typingDiv.innerHTML = "";
+    }
+  }
+});
 
 // FILE UPLOAD
 if (chatFileInput) {
@@ -451,17 +631,25 @@ if (chatImageInput) {
   }
 
   if (msg) {
-    msg.addEventListener("input", () => {
-      if (!selectedUser) return;
+msg.addEventListener("input", () => {
+  if (!selectedUser || !currentUser) return;
 
-      sendTypingStatus(true);
+  console.log("Typing sent to:", selectedUser.id);
 
-      if (typingTimeout) clearTimeout(typingTimeout);
+  socket.emit("typing", {
+    user_id: currentUser.id,
+    receiver_id: selectedUser.id
+  });
 
-      typingTimeout = setTimeout(() => {
-        sendTypingStatus(false);
-      }, 2000);
+  if (typingTimeout) clearTimeout(typingTimeout);
+
+  typingTimeout = setTimeout(() => {
+    socket.emit("stop_typing", {
+      user_id: currentUser.id,
+      receiver_id: selectedUser.id
     });
+  }, 2000);
+});
 
     msg.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -603,12 +791,6 @@ if (chatImageInput) {
 
 setInterval(() => {
   if (!currentUser) return;
-
   refreshUnreadCounts();
-
-  if (selectedUser) {
-    checkTyping();
-    checkNewMessages();
-  }
-}, 2000);
+}, 10000);
 });
