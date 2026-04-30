@@ -17,8 +17,8 @@ app.use("/uploads", express.static("../backend/public/uploads"));
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+  },
 });
 
 // -------------------- SOCKET.IO --------------------
@@ -53,40 +53,39 @@ app.post("/login", async (req, res) => {
     if (!email || !password) {
       return res.json({
         status: "error",
-        message: "Email and password required"
+        message: "Email and password required",
       });
     }
 
-    const [rows] = await pool.execute(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+    const [rows] = await pool.execute("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
 
     const user = rows[0];
 
     if (!user) {
       return res.json({
         status: "error",
-        message: "Invalid credentials"
+        message: "Invalid credentials",
       });
     }
 
-let storedPassword = user.password;
+    let storedPassword = user.password;
 
-// PHP password_hash usually starts with $2y$.
-// Node bcrypt works better with $2b$.
-if (storedPassword.startsWith("$2y$")) {
-  storedPassword = "$2b$" + storedPassword.slice(4);
-}
+    // PHP password_hash usually starts with $2y$.
+    // Node bcrypt works better with $2b$.
+    if (storedPassword.startsWith("$2y$")) {
+      storedPassword = "$2b$" + storedPassword.slice(4);
+    }
 
-const isPasswordCorrect = await bcrypt.compare(password, storedPassword);
+    const isPasswordCorrect = await bcrypt.compare(password, storedPassword);
 
-if (!isPasswordCorrect) {
-  return res.json({
-    status: "error",
-    message: "Invalid credentials"
-  });
-}
+    if (!isPasswordCorrect) {
+      return res.json({
+        status: "error",
+        message: "Invalid credentials",
+      });
+    }
 
     res.json({
       status: "success",
@@ -97,14 +96,14 @@ if (!isPasswordCorrect) {
         nickname: user.nickname,
         avatar: user.avatar,
         department: user.department,
-        status: user.status
-      }
+        status: user.status,
+      },
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -116,7 +115,7 @@ app.post("/register", async (req, res) => {
     if (!name || !email || !password) {
       return res.json({
         status: "error",
-        message: "All fields required"
+        message: "All fields required",
       });
     }
 
@@ -124,19 +123,19 @@ app.post("/register", async (req, res) => {
 
     await pool.execute(
       "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-      [name, email, hashedPassword]
+      [name, email, hashedPassword],
     );
 
     res.json({
       status: "success",
-      message: "User registered"
+      message: "User registered",
     });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
 
     res.json({
       status: "error",
-      message: "Email already exists"
+      message: "Email already exists",
     });
   }
 });
@@ -166,7 +165,7 @@ app.get("/users", async (req, res) => {
         ) AS unread_count
       FROM users u
       `,
-      [currentUserId]
+      [currentUserId],
     );
 
     users.forEach((user) => {
@@ -177,13 +176,13 @@ app.get("/users", async (req, res) => {
 
     res.json({
       status: "success",
-      users
+      users,
     });
   } catch (err) {
     console.error("USERS ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -197,7 +196,7 @@ app.get("/messages", async (req, res) => {
     if (!sender_id || !receiver_id) {
       return res.json({
         status: "error",
-        message: "Missing IDs"
+        message: "Missing IDs",
       });
     }
 
@@ -210,7 +209,7 @@ app.get("/messages", async (req, res) => {
       AND receiver_id = ?
       AND is_read = 0
       `,
-      [receiver_id, sender_id]
+      [receiver_id, sender_id],
     );
 
     const [messages] = await pool.execute(
@@ -223,18 +222,18 @@ app.get("/messages", async (req, res) => {
         (sender_id = ? AND receiver_id = ?)
       ORDER BY created_at ASC
       `,
-      [sender_id, receiver_id, receiver_id, sender_id]
+      [sender_id, receiver_id, receiver_id, sender_id],
     );
 
     res.json({
       status: "success",
-      messages
+      messages,
     });
   } catch (err) {
     console.error("MESSAGES ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -246,7 +245,7 @@ app.post("/send-message", async (req, res) => {
     if (!sender_id || !receiver_id || !message) {
       return res.json({
         status: "error",
-        message: "Missing fields"
+        message: "Missing fields",
       });
     }
 
@@ -255,13 +254,12 @@ app.post("/send-message", async (req, res) => {
       INSERT INTO messages (sender_id, receiver_id, message)
       VALUES (?, ?, ?)
       `,
-      [sender_id, receiver_id, message]
+      [sender_id, receiver_id, message],
     );
 
-    const [rows] = await pool.execute(
-      "SELECT * FROM messages WHERE id = ?",
-      [result.insertId]
-    );
+    const [rows] = await pool.execute("SELECT * FROM messages WHERE id = ?", [
+      result.insertId,
+    ]);
 
     const savedMessage = rows[0];
 
@@ -271,13 +269,13 @@ app.post("/send-message", async (req, res) => {
 
     res.json({
       status: "success",
-      message: savedMessage
+      message: savedMessage,
     });
   } catch (err) {
     console.error("SEND MESSAGE ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -296,18 +294,18 @@ app.get("/unread-counts", async (req, res) => {
       AND is_read = 0
       GROUP BY sender_id
       `,
-      [currentUserId]
+      [currentUserId],
     );
 
     res.json({
       status: "success",
-      counts
+      counts,
     });
   } catch (err) {
     console.error("UNREAD COUNTS ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -324,17 +322,17 @@ app.post("/update-profile", async (req, res) => {
       SET nickname = ?, department = ?, status = ?
       WHERE id = ?
       `,
-      [nickname, department, status, id]
+      [nickname, department, status, id],
     );
 
     res.json({
-      status: "success"
+      status: "success",
     });
   } catch (err) {
     console.error("UPDATE PROFILE ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });
@@ -354,16 +352,16 @@ app.post("/typing", async (req, res) => {
       is_typing = VALUES(is_typing),
       updated_at = CURRENT_TIMESTAMP
       `,
-      [user_id, receiver_id, is_typing]
+      [user_id, receiver_id, is_typing],
     );
 
     res.json({
-      status: "success"
+      status: "success",
     });
   } catch (err) {
     console.error("TYPING ERROR:", err);
     res.status(500).json({
-      status: "error"
+      status: "error",
     });
   }
 });
@@ -380,18 +378,18 @@ app.get("/typing-status", async (req, res) => {
       AND receiver_id = ?
       AND updated_at >= NOW() - INTERVAL 3 SECOND
       `,
-      [other_user_id, user_id]
+      [other_user_id, user_id],
     );
 
     res.json({
       status: "success",
-      is_typing: rows.length > 0 && rows[0].is_typing == 1
+      is_typing: rows.length > 0 && rows[0].is_typing == 1,
     });
   } catch (err) {
     console.error("TYPING STATUS ERROR:", err);
     res.status(500).json({
       status: "error",
-      is_typing: false
+      is_typing: false,
     });
   }
 });
@@ -403,7 +401,7 @@ app.post("/mark-read", async (req, res) => {
     if (!user_id || !other_user_id) {
       return res.json({
         status: "error",
-        message: "Missing user IDs"
+        message: "Missing user IDs",
       });
     }
 
@@ -415,22 +413,22 @@ app.post("/mark-read", async (req, res) => {
       AND receiver_id = ?
       AND is_read = 0
       `,
-      [other_user_id, user_id]
+      [other_user_id, user_id],
     );
 
     io.to(String(other_user_id)).emit("messages_read", {
       reader_id: user_id,
-      sender_id: other_user_id
+      sender_id: other_user_id,
     });
 
     res.json({
-      status: "success"
+      status: "success",
     });
   } catch (err) {
     console.error("MARK READ ERROR:", err);
     res.status(500).json({
       status: "error",
-      message: "Server error"
+      message: "Server error",
     });
   }
 });

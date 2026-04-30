@@ -14,7 +14,6 @@ function updateMyProfileUI() {
   const profileDept = document.getElementById("profileDepartment");
   const statusText = document.getElementById("profileStatusText");
   const statusDot = document.getElementById("profileStatusDot");
-
   const fullNameInput = document.getElementById("fullNameInput");
   const emailInput = document.getElementById("emailInput");
   const nicknameInput = document.getElementById("nicknameInput");
@@ -26,12 +25,11 @@ function updateMyProfileUI() {
   const displayName = currentUser.nickname || currentUser.name || "User";
   const firstLetter = displayName.charAt(0).toUpperCase();
 
-  [avatarEl, modalAvatarEl].forEach(el => {
+  [avatarEl, modalAvatarEl].forEach((el) => {
     if (!el) return;
 
     if (currentUser.avatar) {
-      el.style.backgroundImage =
-        `url(${API}/uploads/avatars/${currentUser.avatar}?t=${Date.now()})`;
+      el.style.backgroundImage = `url(${API}/uploads/avatars/${currentUser.avatar}?t=${Date.now()})`;
       el.innerText = "";
     } else {
       el.style.backgroundImage = "none";
@@ -40,8 +38,8 @@ function updateMyProfileUI() {
   });
 
   if (profileName) profileName.innerText = displayName;
-  if (profileDept) profileDept.innerText = currentUser.department || "No department";
-
+  if (profileDept)
+    profileDept.innerText = currentUser.department || "No department";
   if (fullNameInput) fullNameInput.value = currentUser.name || "";
   if (emailInput) emailInput.value = currentUser.email || "";
   if (nicknameInput) nicknameInput.value = currentUser.nickname || "";
@@ -72,15 +70,15 @@ async function login() {
     const res = await fetch(`${API}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
     });
 
     const data = await res.json();
 
     if (data.status === "success") {
-currentUser = data.user;
-socket.emit("join", currentUser.id);
-updateMyProfileUI();
+      currentUser = data.user;
+      socket.emit("join", currentUser.id);
+      updateMyProfileUI();
 
       document.getElementById("login").style.display = "none";
       document.getElementById("app").style.display = "grid";
@@ -113,7 +111,7 @@ async function loadUsers() {
   const usersDiv = document.getElementById("users");
   usersDiv.innerHTML = "";
 
-  data.users.forEach(user => {
+  data.users.forEach((user) => {
     if (user.id == currentUser.id) return;
 
     const div = document.createElement("div");
@@ -151,7 +149,7 @@ async function loadUsers() {
       document.getElementById("chatTitle").innerText = user.name;
       document.getElementById("typingIndicator").innerHTML = "";
 
-      document.querySelectorAll("#users div").forEach(el => {
+      document.querySelectorAll("#users div").forEach((el) => {
         el.classList.remove("active-user");
       });
 
@@ -172,7 +170,7 @@ async function loadMessages() {
   document.getElementById("messageInputArea").style.display = "flex";
 
   const res = await fetch(
-    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`,
   );
 
   const data = await res.json();
@@ -220,21 +218,16 @@ async function loadMessages() {
     }
   });
 
-messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-// Refresh unread badges after opening a conversation
-refreshUnreadCounts();
+  refreshUnreadCounts();
 }
 
-// PUT IT HERE
 function appendMessage(msg) {
   const messagesDiv = document.getElementById("messages");
   const isMine = msg.sender_id == currentUser.id;
 
-  // Remove old Read/Unread label first.
-  // If a new incoming message arrives after your sent message,
-  // your sent message is no longer the latest message.
-  messagesDiv.querySelectorAll(".seen-status").forEach(el => el.remove());
+  messagesDiv.querySelectorAll(".seen-status").forEach((el) => el.remove());
 
   const wrapper = document.createElement("div");
   wrapper.className = isMine
@@ -263,7 +256,6 @@ function appendMessage(msg) {
   wrapper.appendChild(bubble);
   messagesDiv.appendChild(wrapper);
 
-  // Only show Read/Unread if the newest appended message is mine.
   if (isMine) {
     const seen = document.createElement("div");
     seen.className = "seen-status";
@@ -288,13 +280,13 @@ async function sendMessage() {
   const res = await fetch(`${API}/send-message`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       sender_id: currentUser.id,
       receiver_id: selectedUser.id,
-      message
-    })
+      message,
+    }),
   });
 
   const data = await res.json();
@@ -308,7 +300,7 @@ async function sendMessage() {
 
   socket.emit("stop_typing", {
     user_id: currentUser.id,
-    receiver_id: selectedUser.id
+    receiver_id: selectedUser.id,
   });
 
   input.value = "";
@@ -328,13 +320,13 @@ async function refreshUnreadCounts() {
 
   if (data.status !== "success") return;
 
-  document.querySelectorAll(".user-item").forEach(item => {
+  document.querySelectorAll(".user-item").forEach((item) => {
     const userId = item.dataset.userId;
 
     let badge = item.querySelector(".badge");
     if (badge) badge.remove();
 
-    const countData = data.counts.find(c => c.sender_id == userId);
+    const countData = data.counts.find((c) => c.sender_id == userId);
 
     if (countData && countData.unread_count > 0) {
       const badge = document.createElement("span");
@@ -352,23 +344,24 @@ async function markConversationAsRead(otherUserId) {
     await fetch(`${API}/mark-read`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         user_id: currentUser.id,
-        other_user_id: otherUserId
-      })
+        other_user_id: otherUserId,
+      }),
     });
   } catch (err) {
     console.warn("mark-read failed, falling back to /messages:", err);
 
-    // Fallback: your /messages route also marks messages as read.
     await fetch(
-      `${API}/messages?sender_id=${currentUser.id}&receiver_id=${otherUserId}`
+      `${API}/messages?sender_id=${currentUser.id}&receiver_id=${otherUserId}`,
     );
   }
 
-  const userItem = document.querySelector(`.user-item[data-user-id="${otherUserId}"]`);
+  const userItem = document.querySelector(
+    `.user-item[data-user-id="${otherUserId}"]`,
+  );
   if (userItem) {
     const badge = userItem.querySelector(".badge");
     if (badge) badge.remove();
@@ -386,8 +379,8 @@ async function sendTypingStatus(isTyping) {
     body: JSON.stringify({
       user_id: currentUser.id,
       receiver_id: selectedUser.id,
-      is_typing: isTyping ? 1 : 0
-    })
+      is_typing: isTyping ? 1 : 0,
+    }),
   });
 }
 
@@ -395,7 +388,7 @@ async function checkTyping() {
   if (!currentUser || !selectedUser) return;
 
   const res = await fetch(
-    `${API}/typing-status?user_id=${currentUser.id}&other_user_id=${selectedUser.id}`
+    `${API}/typing-status?user_id=${currentUser.id}&other_user_id=${selectedUser.id}`,
   );
 
   const data = await res.json();
@@ -432,8 +425,8 @@ async function saveProfile() {
       id: currentUser.id,
       nickname,
       department,
-      status
-    })
+      status,
+    }),
   });
 
   currentUser.nickname = nickname;
@@ -450,7 +443,7 @@ async function checkNewMessages() {
   if (!currentUser || !selectedUser) return;
 
   const res = await fetch(
-    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`
+    `${API}/messages?sender_id=${currentUser.id}&receiver_id=${selectedUser.id}`,
   );
 
   const data = await res.json();
@@ -471,54 +464,48 @@ window.addEventListener("DOMContentLoaded", () => {
   const avatarInput = document.getElementById("avatarInput");
   const saveCroppedAvatarBtn = document.getElementById("saveCroppedAvatarBtn");
   const chatFileInput = document.getElementById("chatFileInput");
-const chatImageInput = document.getElementById("chatImageInput");
+  const chatImageInput = document.getElementById("chatImageInput");
 
-socket.on("receive_message", async (msg) => {
-  if (!currentUser) return;
+  socket.on("receive_message", async (msg) => {
+    if (!currentUser) return;
 
-  const isCurrentConversation =
-    selectedUser &&
-    (
-      msg.sender_id == selectedUser.id ||
-      msg.receiver_id == selectedUser.id
-    );
+    const isCurrentConversation =
+      selectedUser &&
+      (msg.sender_id == selectedUser.id || msg.receiver_id == selectedUser.id);
 
-  if (isCurrentConversation) {
-    appendMessage(msg);
+    if (isCurrentConversation) {
+      appendMessage(msg);
 
-    // If the received message is from the open conversation,
-    // mark it as read immediately.
-    if (msg.sender_id == selectedUser.id && msg.receiver_id == currentUser.id) {
-      await markConversationAsRead(selectedUser.id);
+      if (
+        msg.sender_id == selectedUser.id &&
+        msg.receiver_id == currentUser.id
+      ) {
+        await markConversationAsRead(selectedUser.id);
+      }
     }
-  }
 
-  await refreshUnreadCounts();
-});
+    await refreshUnreadCounts();
+  });
 
-socket.on("messages_read", async (data) => {
-  if (!currentUser || !selectedUser) return;
+  socket.on("messages_read", async (data) => {
+    if (!currentUser || !selectedUser) return;
+    if (data.reader_id == selectedUser.id) {
+      await loadMessages();
+    }
 
-  // Example: you sent a message to User 2,
-  // then User 2 opened your conversation.
-  // This event tells your screen to update Unread -> Read.
-  if (data.reader_id == selectedUser.id) {
-    await loadMessages();
-  }
+    await refreshUnreadCounts();
+  });
 
-  await refreshUnreadCounts();
-});
+  socket.on("user_typing", (data) => {
+    console.log("Typing received:", data);
 
-socket.on("user_typing", (data) => {
-  console.log("Typing received:", data);
+    if (!selectedUser) return;
 
-  if (!selectedUser) return;
+    if (data.user_id == selectedUser.id) {
+      const typingDiv = document.getElementById("typingIndicator");
 
-  if (data.user_id == selectedUser.id) {
-    const typingDiv = document.getElementById("typingIndicator");
-
-    if (typingDiv) {
-      typingDiv.innerHTML = `
+      if (typingDiv) {
+        typingDiv.innerHTML = `
         <div class="typing-wrapper">
           <div class="typing-bubble">
             <span></span>
@@ -527,93 +514,90 @@ socket.on("user_typing", (data) => {
           </div>
         </div>
       `;
+      }
     }
-  }
-});
-
-socket.on("user_stop_typing", (data) => {
-  console.log("Stop typing received:", data);
-
-  if (!selectedUser) return;
-
-  if (data.user_id == selectedUser.id) {
-    const typingDiv = document.getElementById("typingIndicator");
-
-    if (typingDiv) {
-      typingDiv.innerHTML = "";
-    }
-  }
-});
-
-// FILE UPLOAD
-if (chatFileInput) {
-  chatFileInput.addEventListener("change", async function () {
-    if (!selectedUser) {
-      alert("Select a user first");
-      return;
-    }
-
-    const file = this.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("sender_id", currentUser.id);
-    formData.append("receiver_id", selectedUser.id);
-
-    const res = await fetch(`${API}/upload-chat-file.php`, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      loadMessages();
-    } else {
-      alert(data.message || "Upload failed");
-    }
-
-    this.value = "";
   });
-}
 
-// IMAGE UPLOAD (same handler)
-if (chatImageInput) {
-  chatImageInput.addEventListener("change", async function () {
-    if (!selectedUser) {
-      alert("Select a user first");
-      return;
+  socket.on("user_stop_typing", (data) => {
+    console.log("Stop typing received:", data);
+
+    if (!selectedUser) return;
+
+    if (data.user_id == selectedUser.id) {
+      const typingDiv = document.getElementById("typingIndicator");
+
+      if (typingDiv) {
+        typingDiv.innerHTML = "";
+      }
     }
-
-    const file = this.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("sender_id", currentUser.id);
-    formData.append("receiver_id", selectedUser.id);
-
-    const res = await fetch(`${API}/upload-chat-file.php`, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      loadMessages();
-    } else {
-      alert(data.message || "Upload failed");
-    }
-
-    this.value = "";
   });
-}
 
+  if (chatFileInput) {
+    chatFileInput.addEventListener("change", async function () {
+      if (!selectedUser) {
+        alert("Select a user first");
+        return;
+      }
+
+      const file = this.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sender_id", currentUser.id);
+      formData.append("receiver_id", selectedUser.id);
+
+      const res = await fetch(`${API}/upload-chat-file.php`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.status === "success") {
+        loadMessages();
+      } else {
+        alert(data.message || "Upload failed");
+      }
+
+      this.value = "";
+    });
+  }
+
+  if (chatImageInput) {
+    chatImageInput.addEventListener("change", async function () {
+      if (!selectedUser) {
+        alert("Select a user first");
+        return;
+      }
+
+      const file = this.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sender_id", currentUser.id);
+      formData.append("receiver_id", selectedUser.id);
+
+      const res = await fetch(`${API}/upload-chat-file.php`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.status === "success") {
+        loadMessages();
+      } else {
+        alert(data.message || "Upload failed");
+      }
+
+      this.value = "";
+    });
+  }
 
   if (email) {
-    email.addEventListener("keydown", e => {
+    email.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         password.focus();
@@ -622,7 +606,7 @@ if (chatImageInput) {
   }
 
   if (password) {
-    password.addEventListener("keydown", e => {
+    password.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         login();
@@ -631,27 +615,27 @@ if (chatImageInput) {
   }
 
   if (msg) {
-msg.addEventListener("input", () => {
-  if (!selectedUser || !currentUser) return;
+    msg.addEventListener("input", () => {
+      if (!selectedUser || !currentUser) return;
 
-  console.log("Typing sent to:", selectedUser.id);
+      console.log("Typing sent to:", selectedUser.id);
 
-  socket.emit("typing", {
-    user_id: currentUser.id,
-    receiver_id: selectedUser.id
-  });
+      socket.emit("typing", {
+        user_id: currentUser.id,
+        receiver_id: selectedUser.id,
+      });
 
-  if (typingTimeout) clearTimeout(typingTimeout);
+      if (typingTimeout) clearTimeout(typingTimeout);
 
-  typingTimeout = setTimeout(() => {
-    socket.emit("stop_typing", {
-      user_id: currentUser.id,
-      receiver_id: selectedUser.id
+      typingTimeout = setTimeout(() => {
+        socket.emit("stop_typing", {
+          user_id: currentUser.id,
+          receiver_id: selectedUser.id,
+        });
+      }, 2000);
     });
-  }, 2000);
-});
 
-    msg.addEventListener("keydown", e => {
+    msg.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -674,7 +658,7 @@ msg.addEventListener("input", () => {
         image.src = e.target.result;
 
         cropAvatarModal = new bootstrap.Modal(
-          document.getElementById("cropAvatarModal")
+          document.getElementById("cropAvatarModal"),
         );
 
         cropAvatarModal.show();
@@ -689,7 +673,7 @@ msg.addEventListener("input", () => {
           dragMode: "move",
           autoCropArea: 1,
           background: false,
-          responsive: true
+          responsive: true,
         });
       };
 
@@ -708,7 +692,7 @@ msg.addEventListener("input", () => {
 
       const canvas = avatarCropper.getCroppedCanvas({
         width: 400,
-        height: 400
+        height: 400,
       });
 
       const dataURL = canvas.toDataURL("image/png");
@@ -732,7 +716,7 @@ msg.addEventListener("input", () => {
       try {
         const res = await fetch(`${API}/upload-avatar.php`, {
           method: "POST",
-          body: formData
+          body: formData,
         });
 
         const data = await res.json();
@@ -766,7 +750,7 @@ msg.addEventListener("input", () => {
     });
   }
 
-  document.addEventListener("keydown", e => {
+  document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       selectedUser = null;
 
@@ -781,7 +765,7 @@ msg.addEventListener("input", () => {
       document.getElementById("typingIndicator").innerHTML = "";
       document.getElementById("messageInputArea").style.display = "none";
 
-      document.querySelectorAll("#users div").forEach(el => {
+      document.querySelectorAll("#users div").forEach((el) => {
         el.classList.remove("active-user");
       });
 
@@ -789,8 +773,8 @@ msg.addEventListener("input", () => {
     }
   });
 
-setInterval(() => {
-  if (!currentUser) return;
-  refreshUnreadCounts();
-}, 10000);
+  setInterval(() => {
+    if (!currentUser) return;
+    refreshUnreadCounts();
+  }, 10000);
 });

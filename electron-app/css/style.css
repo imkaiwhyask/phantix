@@ -23,7 +23,7 @@ body {
   max-width: 380px;
   border: 0;
   border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
 }
 
 /* APP SHELL */
@@ -303,7 +303,7 @@ body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .me {
@@ -348,7 +348,7 @@ body {
   border: 1px solid #e5e7eb;
   border-radius: 18px;
   border-bottom-left-radius: 5px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .typing-bubble span {
@@ -368,7 +368,9 @@ body {
 }
 
 @keyframes typingBounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -408,7 +410,6 @@ body {
   width: 100%;
 }
 
-
 .chat-image {
   max-width: 260px;
   border-radius: 14px;
@@ -428,7 +429,6 @@ body {
   text-decoration: none;
   font-weight: 600;
 }
-
 
 .input-row textarea {
   flex: 1;
@@ -454,7 +454,6 @@ body {
   display: none !important;
 }
 
-
 /* PROFILE MODAL */
 .profile-modal-avatar {
   width: 86px;
@@ -469,18 +468,12 @@ body {
   max-width: 100%;
 }
 
-
-  .details-panel {
-    display: none !important;
-  }
+.details-panel {
+  display: none !important;
 }
 
-  .icon-rail,
-  .chat-list-panel,
-  .details-panel {
-    display: none !important;
-  }
-
-
-
+.icon-rail,
+.chat-list-panel,
+.details-panel {
+  display: none !important;
 }
